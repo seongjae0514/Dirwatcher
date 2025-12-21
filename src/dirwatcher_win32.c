@@ -6,6 +6,10 @@
 #include <stdbool.h>
 #include <wchar.h>
 #include <stdint.h>
+#include <strsafe.h>
+#include <pathcch.h>
+
+#pragma comment(lib, "Pathcch.lib")
 
 /* Defines ********************************************/
 
@@ -493,4 +497,70 @@ long dirwatcher_get_target_win32_error(dirwatcher_target_t target)
     }
 
     return ((_dirwatcher_target_impl_t*)target)->error_code;
+}
+
+size_t dirwatcher_get_full_path_from_target(const char* path, dirwatcher_target_t target, char* buf, size_t buf_len)
+{
+    if (!_is_valid_target_ptr((_dirwatcher_target_impl_t*)target))
+    {
+        return 0;
+    }
+
+    wchar_t* wbuffer       = NULL;
+    size_t   cb_wbuffer    = 0;
+    int      cch_wbuffer   = 0;
+    HANDLE   handle        = ((_dirwatcher_target_impl_t*)target)->dir_handle;
+    wchar_t* w_rel_path    = NULL;
+    size_t   cb_w_rel_path = 0;
+
+    //
+    // Path to w_rel_path
+    //
+
+    cb_w_rel_path = MultiByteToWideChar(CP_UTF8, 0, path, -1, NULL, 0) * sizeof(wchar_t);
+    w_rel_path    = malloc(cb_w_rel_path);
+    
+    if (!w_rel_path)
+    {
+        return 0;
+    }
+    
+    MultiByteToWideChar(CP_UTF8, 0, path, -1, w_rel_path, ((int)(cb_w_rel_path / sizeof(wchar_t))));
+
+    //
+    // Get required buffer length and allocate buffer
+    //
+
+    cb_wbuffer = GetFinalPathNameByHandleW(handle, NULL, 0, FILE_NAME_NORMALIZED | VOLUME_NAME_DOS) * sizeof(wchar_t)
+                 + sizeof((wchar_t)L'\\')
+                 + cb_w_rel_path
+                 - sizeof((wchar_t)L'\0');
+
+    cch_wbuffer = (int)(cb_wbuffer / sizeof(wchar_t));
+
+    wbuffer = malloc(cb_wbuffer);
+
+    if (!wbuffer)
+    {
+        free(w_rel_path);
+        return 0;
+    }
+
+    //
+    // Append
+    //
+
+    GetFinalPathNameByHandleW(handle, wbuffer, cch_wbuffer, FILE_NAME_NORMALIZED | VOLUME_NAME_DOS);
+    PathCchAppendEx(wbuffer, cch_wbuffer, w_rel_path, PATHCCH_ALLOW_LONG_PATHS);
+
+    //
+    // Copy to user buffer
+    //
+
+    int ret = WideCharToMultiByte(CP_UTF8, 0, wbuffer, -1, buf, (int)buf_len, NULL, FALSE);
+
+    free(wbuffer);
+    free(w_rel_path);
+
+    return ret;
 }

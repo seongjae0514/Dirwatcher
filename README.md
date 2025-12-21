@@ -4,6 +4,7 @@
 
 ## Patch note
 
+- `v0.1.1` - 타겟으로부터의 절대 경로를 얻는 함수인 `dirwatcher_get_full_path_from_target` 추가
 - `v0.1.0` - Win32용 구현 완성
 
 ## Usage
@@ -27,7 +28,7 @@ dirwatcher_close_target(target);
 
 ## License
 
-*CC0 1.0 유니버설*
+**CC0 1.0 유니버설**
 
 - 이 증서와 함께 저작물을 공개한 사람은  
   저작권법을 포함하여 관련 및 인접 권리 전반에 대해,  

@@ -169,6 +169,14 @@ bool dirwatcher_start_watch_target(dirwatcher_target_t target);
 bool dirwatcher_stop_watch_target(dirwatcher_target_t target);
 
 /*
+    Gets full path name from target.
+    If target is invalid or path is NULL, returns 0.
+
+    If buf is NULL, returns required buffer length.
+*/
+size_t dirwatcher_get_full_path_from_target(const char* path, dirwatcher_target_t target, char* buf /* NULLABLE */, size_t buf_len);
+
+/*
     Returns target's error code.
     if target is invalid, returns DIRWATCHER_INVALID_TARGET.
 */

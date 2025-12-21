@@ -17,6 +17,14 @@ static char* event_names[] = {
     "Renamed to",
     "<ERROR>"
 };
+static char* error_names[] = {
+    "DIRWATCHER_SUCCESS",
+    "DIRWATCHER_UNKNOWN_INTERNAL_ERROR",
+    "DIRWATCHER_TARGET_NOT_SUPPORTED",
+    "DIRWATCHER_ACCESS_DENIED",
+    "DIRWATCHER_MEMORY_NOT_ENOUGH",
+    "DIRWATCHER_UNKNOWN_OS_ERROR"
+};
 static dirwatcher_target_t target   = NULL;
 static bool                err_flag = false;
 
@@ -24,19 +32,27 @@ static void callback(const dirwatcher_event_info_t* event)
 {
     if (!event)
     {
-        printf("Error occured. error code: %d, win32 error code: %ld\n"
+        printf("Error occured. error name: %s\n"
+               "win32 error code: % ld\n"
                "To exit, press any key.\n",
-               dirwatcher_get_target_error(target),
+               error_names[dirwatcher_get_target_error(target)],
                dirwatcher_get_target_win32_error(target));
         err_flag = true;
         return;
     }
 
+    size_t buffer_len = dirwatcher_get_full_path_from_target(event->name, target, NULL, 0);
+    char*  buffer     = malloc(buffer_len);
+
+    dirwatcher_get_full_path_from_target(event->name, target, buffer, buffer_len);
+
     printf("+---------------------------------------------------------\n"
            "| Event: %s\n"
            "| Name:  %s\n"
            "+---------------------------------------------------------\n",
-           event_names[event->event], event->name);
+           event_names[event->event], buffer);
+
+    free(buffer);
 }
 
 static void remove_newline(char* buf)
