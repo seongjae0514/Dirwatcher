@@ -137,13 +137,19 @@ typedef struct dirwatcher_event_info
     event_info is only valid during callback execution.
     If an error occurs in the worker thread, event_info will be NULL. 
 */
-typedef void (*dirwatcher_callback_t)(const dirwatcher_event_info_t* event_info);
+typedef void (*dirwatcher_callback_t)(const dirwatcher_event_info_t* event_info, void* user_data);
 
 /*
     Opens a directory target for mornitoring.
     Returns NULL on failure.
 */
 dirwatcher_target_t dirwatcher_open_target(const char* name);
+
+/*
+    Opens a directory target and set callback and start watch
+    Returns NULL on failure.
+*/
+dirwatcher_target_t dirwatcher_watch(const char* name, dirwatcher_callback_t callback, void* user_data);
 
 /*
     Closes a directory target.
@@ -154,7 +160,7 @@ bool dirwatcher_close_target(dirwatcher_target_t target);
 /*
     Sets the target's callback thread-safely.
 */
-bool dirwatcher_set_target_callback(dirwatcher_target_t target, dirwatcher_callback_t callback);
+bool dirwatcher_set_target_callback(dirwatcher_target_t target, dirwatcher_callback_t callback, void* user_data);
 
 /*
     Start target watching.

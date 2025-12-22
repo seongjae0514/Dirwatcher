@@ -34,6 +34,7 @@ typedef struct _dirwatcher_target_impl
                                                 // ERROR_OPERATION_ABORTED (cancel/shutdown) must NOT be stored here
 
     dirwatcher_callback_t callback;             // Callback invoked when a directory event occurs
+    void*                 callback_user_data;   // 
     SRWLOCK               callback_lock;        // Must be held when changing the callback
 } _dirwatcher_target_impl_t;
 
@@ -182,6 +183,7 @@ static DWORD WINAPI _worker_thread_routine(PVOID data)
     DWORD                      bytes_returned      = 0;
     bool                       success             = true;
     dirwatcher_callback_t      cb                  = NULL;
+    void*                      cb_user_data        = NULL;
 
     for (;;)
     {
@@ -218,7 +220,8 @@ static DWORD WINAPI _worker_thread_routine(PVOID data)
         //
 
         AcquireSRWLockShared(&target->callback_lock);
-        cb = target->callback;
+        cb           = target->callback;
+        cb_user_data = target->callback_user_data;
         ReleaseSRWLockShared(&target->callback_lock);
 
         if (success)
@@ -231,7 +234,7 @@ static DWORD WINAPI _worker_thread_routine(PVOID data)
 
             for (int i = 0; i < events_count; i++)
             {
-                if (cb) cb(&events[i]);
+                if (cb) cb(&events[i], cb_user_data);
             }
 
             //
@@ -252,7 +255,7 @@ static DWORD WINAPI _worker_thread_routine(PVOID data)
             {
                 InterlockedExchange(&target->error_code, last_error);
                 InterlockedExchange(&target->exit_flag, 1);
-                if (cb) cb(NULL);
+                if (cb) cb(NULL, cb_user_data);
                 return (DWORD)-1;
             }
         }
@@ -311,31 +314,32 @@ static _dirwatcher_target_impl_t* _create_target(const char* name)
 
     target->worker_control_event = _create_working_event();
 
-    if (!target->worker_control_event)
-    {
-        CloseHandle(target->dir_handle);
-        free(target);
-        return NULL;
-    }
+if (!target->worker_control_event)
+{
+    CloseHandle(target->dir_handle);
+    free(target);
+    return NULL;
+}
 
-    target->worker_thread_handle = _create_worker_thread(target);
+target->worker_thread_handle = _create_worker_thread(target);
 
-    if (!target->worker_thread_handle)
-    {
-        CloseHandle(target->dir_handle);
-        CloseHandle(target->worker_control_event);
-        free(target);
-        return NULL;
-    }
+if (!target->worker_thread_handle)
+{
+    CloseHandle(target->dir_handle);
+    CloseHandle(target->worker_control_event);
+    free(target);
+    return NULL;
+}
 
-    target->magic      = DIRWATCHER_TARGET_MAGIC_NUMBER;
-    target->exit_flag  = 0;
-    target->error_code = 0;
-    target->callback   = NULL;
+target->magic = DIRWATCHER_TARGET_MAGIC_NUMBER;
+target->exit_flag = 0;
+target->error_code = 0;
+target->callback = NULL;
+target->callback_user_data = NULL;
 
-    InitializeSRWLock(&target->callback_lock);
+InitializeSRWLock(&target->callback_lock);
 
-    return target;
+return target;
 }
 
 static void _delete_target(_dirwatcher_target_impl_t* target)
@@ -375,7 +379,7 @@ static void _delete_target(_dirwatcher_target_impl_t* target)
     //
 
     target->magic = 0;
-    
+
     free(target);
 }
 
@@ -396,7 +400,7 @@ dirwatcher_target_t dirwatcher_open_target(const char* name)
 {
     DWORD attr = GetFileAttributesA(name);
 
-    if (!name                           ||
+    if (!name ||
         attr == INVALID_FILE_ATTRIBUTES ||
         !(attr & FILE_ATTRIBUTE_DIRECTORY))
     {
@@ -408,59 +412,52 @@ dirwatcher_target_t dirwatcher_open_target(const char* name)
 
 bool dirwatcher_close_target(dirwatcher_target_t target)
 {
-    if (_is_valid_target_ptr((_dirwatcher_target_impl_t*)target))
-    {
-        _delete_target((_dirwatcher_target_impl_t*)target);
-        return true;
-    }
-    else
+    if (!_is_valid_target_ptr((_dirwatcher_target_impl_t*)target))
     {
         return false;
     }
+
+    _delete_target((_dirwatcher_target_impl_t*)target);
+    return true;
 }
 
-bool dirwatcher_set_target_callback(dirwatcher_target_t target, dirwatcher_callback_t callback)
+bool dirwatcher_set_target_callback(dirwatcher_target_t target, dirwatcher_callback_t callback, void* user_data)
 {
-    if (_is_valid_target_ptr((_dirwatcher_target_impl_t*)target))
-    {
-        _dirwatcher_target_impl_t* target_impl = target;
-
-        AcquireSRWLockExclusive(&target_impl->callback_lock);
-        target_impl->callback = callback;
-        ReleaseSRWLockExclusive(&target_impl->callback_lock);
-
-        return true;
-    }
-    else
+    if (!_is_valid_target_ptr((_dirwatcher_target_impl_t*)target))
     {
         return false;
     }
+
+    _dirwatcher_target_impl_t* target_impl = target;
+
+    AcquireSRWLockExclusive(&target_impl->callback_lock);
+    target_impl->callback           = callback;
+    target_impl->callback_user_data = user_data;
+    ReleaseSRWLockExclusive(&target_impl->callback_lock);
+
+    return true;
 }
 
 bool dirwatcher_start_watch_target(dirwatcher_target_t target)
 {
-    if (_is_valid_target_ptr((_dirwatcher_target_impl_t*)target))
-    {
-        _resume_target((_dirwatcher_target_impl_t*)target);
-        return true;
-    }
-    else
+    if (!_is_valid_target_ptr((_dirwatcher_target_impl_t*)target))
     {
         return false;
     }
+
+    _resume_target((_dirwatcher_target_impl_t*)target);
+    return true;
 }
 
 bool dirwatcher_stop_watch_target(dirwatcher_target_t target)
 {
-    if (_is_valid_target_ptr((_dirwatcher_target_impl_t*)target))
-    {
-        _pause_target((_dirwatcher_target_impl_t*)target);
-        return true;
-    }
-    else
+    if (!_is_valid_target_ptr((_dirwatcher_target_impl_t*)target))
     {
         return false;
     }
+
+    _pause_target((_dirwatcher_target_impl_t*)target);
+    return true;
 }
 
 dirwatcher_error_t dirwatcher_get_target_error(dirwatcher_target_t target)
@@ -563,4 +560,36 @@ size_t dirwatcher_get_full_path_from_target(const char* path, dirwatcher_target_
     free(w_rel_path);
 
     return ret;
+}
+
+dirwatcher_target_t dirwatcher_watch(const char* name, dirwatcher_callback_t callback, void* user_data)
+{
+    _dirwatcher_target_impl_t* target = dirwatcher_open_target(name);
+    bool                       success;
+
+    if (!target)
+    {
+        return NULL;
+    }
+
+    if (callback)
+    {
+        success = dirwatcher_set_target_callback(target, callback, user_data);
+        
+        if (!success)
+        {
+            dirwatcher_close_target(target);
+            return NULL;
+        }
+    }
+
+    success = dirwatcher_start_watch_target(target);
+    
+    if (!success)
+    {
+        dirwatcher_close_target(target);
+        return NULL;
+    }
+
+    return target;
 }

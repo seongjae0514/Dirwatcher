@@ -7,6 +7,7 @@
 #endif
 
 #define MY_MAX_PATH 260
+#define MY_UNREFERENCED_PARAMETER(x) x
 
 static char* event_names[] = {
     "<ERROR>",
@@ -28,8 +29,10 @@ static char* error_names[] = {
 static dirwatcher_target_t target   = NULL;
 static bool                err_flag = false;
 
-static void callback(const dirwatcher_event_info_t* event)
+static void callback(const dirwatcher_event_info_t* event, void* user_data)
 {
+    MY_UNREFERENCED_PARAMETER(user_data);
+
     if (!event)
     {
         printf("Error occured. error name: %s\n"
@@ -91,7 +94,7 @@ int main(void)
 
     printf("[A]: Stop watching [S]: Resume watching [Q]: Exit\n");
 
-    dirwatcher_set_target_callback(target, callback);
+    dirwatcher_set_target_callback(target, callback, NULL);
     dirwatcher_start_watch_target(target);
 
     while (!err_flag)
