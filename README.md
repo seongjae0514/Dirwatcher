@@ -4,6 +4,7 @@
 
 ## Patch note
 
+- `v0.1.3` - `dirwatcher_get_full_path_from_target` 함수의 인자 순서를 개선
 - `v0.1.2` - 보다 간단한 함수인 `dirwatcher_watch` 함수 추가
 - `v0.1.1` - 타겟으로부터의 절대 경로를 얻는 함수인 `dirwatcher_get_full_path_from_target` 추가
 - `v0.1.0` - Win32용 구현 완성

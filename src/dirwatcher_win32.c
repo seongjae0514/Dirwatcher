@@ -496,7 +496,7 @@ long dirwatcher_get_target_win32_error(dirwatcher_target_t target)
     return ((_dirwatcher_target_impl_t*)target)->error_code;
 }
 
-size_t dirwatcher_get_full_path_from_target(const char* path, dirwatcher_target_t target, char* buf, size_t buf_len)
+size_t dirwatcher_get_full_path_from_target(dirwatcher_target_t target, const char* path, char* buf, size_t buf_len)
 {
     if (!_is_valid_target_ptr((_dirwatcher_target_impl_t*)target))
     {

@@ -180,7 +180,7 @@ bool dirwatcher_stop_watch_target(dirwatcher_target_t target);
 
     If buf is NULL, returns required buffer length.
 */
-size_t dirwatcher_get_full_path_from_target(const char* path, dirwatcher_target_t target, char* buf /* NULLABLE */, size_t buf_len);
+size_t dirwatcher_get_full_path_from_target(dirwatcher_target_t target, const char* path, char* buf /* NULLABLE */, size_t buf_len);
 
 /*
     Returns target's error code.
