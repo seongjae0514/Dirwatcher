@@ -234,7 +234,11 @@ static DWORD WINAPI _worker_thread_routine(PVOID data)
 
             for (int i = 0; i < events_count; i++)
             {
-                if (cb) cb(&events[i], cb_user_data);
+                if (cb)
+                {
+                    events[i].target = target;
+                    cb(&events[i], cb_user_data);
+                }
             }
 
             //
@@ -592,4 +596,10 @@ dirwatcher_target_t dirwatcher_watch(const char* name, dirwatcher_callback_t cal
     }
 
     return target;
+}
+
+size_t dirwatcher_get_full_path_from_event_info(const dirwatcher_event_info_t* event_info, char* buf /* NULLABLE */, size_t buf_len)
+{
+    if (!event_info) return 0;
+    return dirwatcher_get_full_path_from_target(event_info->target, event_info->name, buf, buf_len);
 }

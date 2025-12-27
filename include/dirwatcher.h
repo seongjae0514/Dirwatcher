@@ -129,8 +129,9 @@ typedef enum dirwatcher_error
 
 typedef struct dirwatcher_event_info
 {
-    char*              name;  /* read-only, owned by library, UTF - 8 Encoding */
-    dirwatcher_event_t event;
+    dirwatcher_target_t target; /* target that the event occured */
+    char*               name;   /* read-only, owned by library, UTF - 8 Encoding */
+    dirwatcher_event_t  event;
 } dirwatcher_event_info_t;
 
 /*
@@ -181,6 +182,12 @@ bool dirwatcher_stop_watch_target(dirwatcher_target_t target);
     If buf is NULL, returns required buffer length.
 */
 size_t dirwatcher_get_full_path_from_target(dirwatcher_target_t target, const char* path, char* buf /* NULLABLE */, size_t buf_len);
+
+/*
+    Gets full path name from event information.
+    If buf is NULL, returns required buffer length.
+*/
+size_t dirwatcher_get_full_path_from_event_info(const dirwatcher_event_info_t* event_info, char* buf /* NULLABLE */, size_t buf_len);
 
 /*
     Returns target's error code.

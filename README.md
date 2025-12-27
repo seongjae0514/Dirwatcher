@@ -4,6 +4,7 @@
 
 ## Patch note
 
+- `v0.1.4` - `dirwatcher_event_info_t` 구조체가 타겟 핸들을 담도록 변경, `dirwatcher_get_full_path_from_event_info` 함수 구현
 - `v0.1.3` - `dirwatcher_get_full_path_from_target` 함수의 인자 순서를 개선
 - `v0.1.2` - 보다 간단한 함수인 `dirwatcher_watch` 함수 추가
 - `v0.1.1` - 타겟으로부터의 절대 경로를 얻는 함수인 `dirwatcher_get_full_path_from_target` 추가

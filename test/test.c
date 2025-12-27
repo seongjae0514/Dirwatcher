@@ -44,10 +44,10 @@ static void callback(const dirwatcher_event_info_t* event, void* user_data)
         return;
     }
 
-    size_t buffer_len = dirwatcher_get_full_path_from_target(target, event->name, NULL, 0);
+    size_t buffer_len = dirwatcher_get_full_path_from_event_info(event, NULL, 0);
     char*  buffer     = malloc(buffer_len);
 
-    dirwatcher_get_full_path_from_target(target, event->name, buffer, buffer_len);
+    dirwatcher_get_full_path_from_event_info(event, buffer, buffer_len);
 
     printf("+---------------------------------------------------------\n"
            "| Event: %s\n"
